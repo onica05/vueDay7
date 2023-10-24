@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基于组件的购物车案例</title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        * {
+            padding: 0px;
+            margin: 0px;
+        }
+
+        .cart {
+            border: 1px solid red;
+            width: 410px;
+            height: 500px;
+            margin: 30px auto;
+            position: relative;
+
+        }
+
+        .title {
+            background-color: peru;
+            width: 100%;
+            height: 50px;
+            line-height: 50px;
+            color: white;
+            text-align: center;
+            font-size: 20px;
+            position: absolute;
+            top: 0px;
+
+        }
+
+        .lists {
+            width: 100%;
+            margin-top: 50px;
+        }
+
+        .item {
+            width: 100%;
+            height: 66px;
+            border-bottom: 1px solid sandybrown;
+        }
+
+        .item img {
+            width: 50px;
+            height: 50px;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        .item .name {
+            display: inline-block;
+            line-height: 66px;
+
+        }
+
+        .item .price {
+            display: inline-block;
+            line-height: 66px;
+            margin-left: 10px;
+
+        }
+
+        .item .change {
+            width: 131px;
+            display: inline-block;
+            margin-left: 12px;
+            text-align: center;
+        }
+
+        a {
+            display: inline-block;
+            text-decoration: none;
+            color: gray;
+            width: 30px;
+            height: 33px;
+            font-size: 20px;
+            line-height: 27px;
+            text-align: center;
+            font-weight: bold;
+            background-color: darkgray;
+        }
+
+        input {
+            width: 50px;
+            height: 30px;
+            text-align: center;
+        }
+
+        .del {
+            font-size: larger;
+            font-weight: bolder;
+            color: red;
+            float: right;
+            margin-right: 20px;
+            margin-top: 23px;
+        }
+
+        .del:hover {
+            color: green;
+        }
+
+        .total {
+            width: 100%;
+            height: 50px;
+            line-height: 50px;
+            position: absolute;
+            bottom: 0px;
+            background-color: peachpuff;
+        }
+
+        .total span {
+            color: red;
+            font-size: 20px;
+            font-weight: bold;
+            float: left;
+            margin-left: 10px;
+            margin-top: 5px;
+        }
+
+        .total button {
+            color: white;
+            font-size: 20px;
+            text-align: center;
+            width: 80px;
+            height: 40px;
+            line-height: 40px;
+            background-color: sienna;
+            border: none;
+            border-radius: 15px;
+            float: right;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 购物车案例：需求：删除+数量修改+总价显示 -->
+    <!-- 难点：由于数量的变更，有三种情况，输入框变更，加号，减号变更；但是处理事件都是用的同一个changeNum。在子组件methods里的时候就用type属性来区分目前是那个操作。
+        changeNum里面通过if else-if来判断。
+        在子组件中需要写明三个事件操作，难点：传递参数部分，都需要id,输入框特殊一点，还需要拿到value值，则是通过$event事件--event.target.value获取
+     -->
+    <!-- 根据功能划分组件：1.标题部分-展示文本 2.中间列表展示功能-增删改查 3.总价部分-计算商品总价 -->
+    <div id="app">
+        <div class="container">
+            <my-cart></my-cart>
+        </div>
+    </div>
+
+
+    <!-- 引入vue.js库文件 -->
+    <script type="text/javascript" src="../JS/vue.js"></script>
+    <script type="text/javascript">
+        // 标题组件
+        var CartTitle = {
+            props: ['uname'],
+            template: `
+            <div class="title">{{uname}}的商品</div>
+            `,
+        };
+        // 购物车列表组件
+        var CartList = {
+            props: ['list'],
+            template: `
+            <div class="lists">
+                    <div :key='item.id'v-for='item in list'  class="item">
+                        <img :src="item.img" alt="商品A">
+                        <div class="name">{{item.name}}</div>
+                        <div class="price">{{item.price}}元</div>
+                        <div class="change">
+                            <a href="##" @click.prevent="sub(item.id)">-</a>
+                            <input type="text" class="num" :value='item.num' @blur='changeNum(item.id,$event)'>
+                            <a href="##" @click.prevent="add(item.id)">+</a>
+                        </div>
+                        <div class="del" @click="del(item.id)">X</div>
+                    </div>
+            </div>
+            `,
+            methods: {
+                changeNum: function (id, event) {
+                    // 实现数量变更
+                    // 这个event表示input输入框的值value
+                    console.log(id, event.target.value);
+                    this.$emit('change-num', {
+                        id: id,
+                        num: event.target.value,
+                        type: 'change',
+                    })
+                },
+                sub: function (id) {
+                    this.$emit('change-num', {
+                        id: id,
+                        // 这个是为了区分，要执行的减 还是 加，还有跟上面的区分
+                        type: 'sub',
+                    })
+                },
+                add: function (id) {
+                    this.$emit('change-num', {
+                        id: id,
+                        // 这个是为了区分，要执行的减 还是 加，还有跟上面的区分
+                        type: 'add',
+                    })
+                },
+                del: function (id) {
+                    // 最好是把事件处理定义在父组件里面，在子组件不建议直接操作父组件的属性
+                    // 把id传递给父组件，通过this.$emit()
+                    // console.log(id);
+                    this.$emit('cart-del', id)
+                }
+            }
+        };
+        // 计算总价组件
+        var CartTotal = {
+            props: ['list'],
+            template: `
+                <div class="total">
+                    <span>总价:{{total}}元</span>
+                    <button>结算</button>
+                </div>
+            `,
+            computed: {
+                total: function () {
+                    // 计算总价,遍历数组 将其中的单价 数量相乘，然后相加.
+                    var t = 0;
+                    this.list.forEach(item => {
+                        t += item.price * item.num
+                    });
+                    return t;
+                }
+            },
+        }
+
+        Vue.component('my-cart', {
+            data: function () {
+                return {
+                    uname: '张三',
+                    list: [{
+                        id: 1,
+                        name: '卡地亚戒指',
+                        price: 10,
+                        num: 1,
+                        img: './imgs/25b7df7c-9691-417c-96c7-6a5c89db878f.png',
+                    }, {
+                        id: 2,
+                        name: 'CARTIER',
+                        price: 20,
+                        num: 1,
+                        img: './imgs/bf16f5b5-09a2-4cad-a32c-1d0812376931.png',
+                    }, {
+                        id: 3,
+                        name: 'CARTIER',
+                        price: 20,
+                        num: 1,
+                        img: './imgs/35490e76-c780-4eba-97d9-487ac12d96aa.png',
+                    },
+                    ],
+                }
+            },
+            template: `
+                <div class="cart">
+                    <cart-title :uname='uname'></cart-title>
+                    <cart-list :list='list' @change-num="changeNum($event)" @cart-del="delCart($event)"></cart-list>
+                    <cart-total :list='list'></cart-total>
+                </div>
+            
+            `,
+            // 采用全局组件my-cart，包括三个小组件
+            components: {
+                'cart-title': CartTitle,
+                'cart-list': CartList,
+                'cart-total': CartTotal
+            },
+            methods: {
+                changeNum: function (val) {
+                    // 分为三种情况：输入域变更；加号变更；减号变更
+                    if (val.type == 'change') {
+                        // console.log(val); 这个val是一个对象里面包含id，num.也就是上面传递过来的
+                        // 根据子组件传递过来的数据，更新List中对应的数据，利用遍历
+                        this.list.some(item => {
+                            if (item.id == val.id) {
+                                // 这里面的num就是单件数量
+                                item.num = val.num
+                                // 终止遍历, return true，是some()终止遍历的方式
+                                return true;
+                            }
+                        });
+                    }else if(val.type == 'sub'){
+                        // 减1操作
+                        this.list.some(item => {
+                            if (item.id == val.id) {
+                                // 这里面的num就是单件数量
+                                item.num -= 1;
+                                // 终止遍历, return true，是some()终止遍历的方式
+                                return true;
+                            }
+                        });
+
+                    }else if(val.type == 'add'){
+                        // 加1操作
+                        this.list.some(item => {
+                            if (item.id == val.id) {
+                                // 这里面的num就是单件数量
+                                item.num += 1;
+                                // 终止遍历, return true，是some()终止遍历的方式
+                                return true;
+                            }
+                        });
+
+                    }
+                },
+                delCart: function (id) {
+                    console.log(id);
+                    // 根据Id删除list中对应的数据
+                    // 首先找到id所对应的index
+                    var index = this.list.findIndex(item => {
+                        return item.id == id;
+                    })
+                    console.log(index);
+                    // 然后根据Index 删除List
+                    // this.list.splice(删除元素的index， 删除个数)
+                    this.list.splice(index, 1)
+
+                }
+            }
+
+        })
+
+        var vm = new Vue({
+            el: '#app',
+
+
+        });
+
+    </script>
+</body>
+
+</html>
